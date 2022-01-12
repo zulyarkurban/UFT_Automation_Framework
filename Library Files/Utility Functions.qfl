@@ -1,0 +1,90 @@
+﻿Dim FLAG_EVALFAIL, SCREENSHOT_COUNTER
+Dim DATA_DICTIONARY, DATA_ROW
+
+
+'-------------------------------------------------------------------------------
+'Description: Test reporting 
+'-------------------------------------------------------------------------------
+Function ReportStep(ByVal TestStep, ByVal DescriptionText, ByVal Status, ByVal Screenshot)
+
+	If Screenshot Then
+	    Screenshot = CaptureScreen(TestStep & " - " & DescriptionText)
+	    Reporter.ReportEvent micDone, TestStep, "Screensht saved at " & Screenshot
+	End If
+	If Status = True Then
+	    Reporter.ReportEvent micPass, TestStep, DescriptionText
+	ElseIf Status = False Then
+	    Reporter.ReportEvent micFail, TestStep, DescriptionText
+	Else    
+	    Reporter.ReportEvent micDone, TestStep, DescriptionText
+	End If
+End Function
+
+
+'-------------------------------------------------------------------------------
+'Description: Captures screen shots 
+'-------------------------------------------------------------------------------
+Function CaptureScreen(ByVal TestStep)
+Dim strFileName
+
+strFileName = Environment.Value("ResultDir") & "\" & SCREENSHOT_COUNTER & " - " & TestStep & ".png"
+SCREENSHOT_COUNTER =  SCREENSHOT_COUNTER + 1
+Desktop.CaptureBitmap strFileName, True
+CaptureScreen = strFileName
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: Error handling
+'-------------------------------------------------------------------------------
+Function ErroHandling
+	If err.number() <> 0 Then
+		ReportStep "ErroHandling", "Could not execute the Test case due to Error.", False, True
+		call err.clear()
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+	
+End Function
+
+
+'-------------------------------------------------------------------------------
+'Description: Open the result folder where screenshots are stored
+'-------------------------------------------------------------------------------
+Function OpenResultFolder
+
+	SystemUtil.Run "explorer.exe", Environment.Value("ResultDir")
+	Wait 5
+	
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: Function to read excel data .
+'Assumed that header row is 1
+'-------------------------------------------------------------------------------
+Function ReadExcel
+
+Set DATA_DICTIONARY = CreateObject("Scripting.Dictionary")
+
+Set objExcel = CreateObject("Excel.Application")
+Set objWorkbook = objExcel.Workbooks.Open ( Environment.Value("TestDir") & "\Test Data\Test Data.xlsx")
+
+HeaderRow = 1 ''Assumed that header row is 1
+ColumnNumber = 1
+
+HeaderRowValue = objExcel.Cells(HeaderRow,ColumnNumber).Value
+While HeaderRowValue <> ""
+	
+	DataRowValue = objExcel.Cells(DATA_ROW,ColumnNumber).Value
+	
+	If DATA_DICTIONARY.Exists(HeaderRowValue) Then
+		DATA_DICTIONARY.Item(HeaderRowValue) = DataRowValue 
+	Else
+		DATA_DICTIONARY.Add HeaderRowValue, DataRowValue
+	End If
+	Print "Data added in Dictionary as - Header = " & HeaderRowValue  & " ; Value = " & DataRowValue
+	
+	ColumnNumber = ColumnNumber + 1
+	HeaderRowValue = objExcel.Cells(HeaderRow,ColumnNumber).Value
+Wend
+
+objExcel.Quit
+End Function

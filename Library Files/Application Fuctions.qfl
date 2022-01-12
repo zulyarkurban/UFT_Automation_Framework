@@ -1,0 +1,248 @@
+﻿Dim BROWSER_TYPE
+
+FLAG_EVALFAIL = 0
+SCREENSHOT_COUNTER = 1
+
+'-------------------------------------------------------------------------------
+'Description: 'Function to Open the Browser and navigate to http://automationpractice.com/index.php
+'-------------------------------------------------------------------------------
+Function OpenBrowser
+
+	On Error Resume Next
+
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "OpenBrowser", "Could not open the Browser as the earlier function failed ", False, True
+		Exit function
+	End If
+
+	If Ucase(BROWSER_TYPE) = "IE"  Then
+		SystemUtil.Run "iexplore.exe","http://automationpractice.com/index.php"
+	ElseIf Ucase(BROWSER_TYPE) = "EDGE" Then	
+		SystemUtil.Run "msedge.exe","http://automationpractice.com/index.php"	
+	ElseIf  Ucase(BROWSER_TYPE) = "CHROME" Then
+		SystemUtil.Run "chrome.exe","http://automationpractice.com/index.php"
+	Else 'If no brlowser provide, by default open IE
+		SystemUtil.Run "iexplore.exe","http://automationpractice.com/index.php"
+	End If
+	Browser("CreationTime:=0").Sync
+	Browser("CreationTime:=0").Maximize
+		
+	If Browser("CreationTime:=0").Page("title:=My Store").Link("text:=Sign in").Exist Then
+		ReportStep "OpenBrowser", "The website was opened successfully. ", True, True
+		Browser("CreationTime:=0").Highlight
+	Else
+		ReportStep "OpenBrowser", "The application is not opened. ", False, True	
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+	
+	Call ErroHandling()
+	
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: User sign in 
+'-------------------------------------------------------------------------------
+Function SignIn
+
+	On Error Resume Next
+	
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "SignIn", "Could not execute the SignIn functionality. ", False, True
+		Exit function
+	End If
+	Browser("CreationTime:=0").Page("title:=My Store").Link("text:=Sign in").Click
+	Browser("CreationTime:=0").Sync	
+	
+	'Enter Email
+	'Create email based n Date and time
+	timestamp = Replace(Now(),"/","")
+	timestamp = Replace(timestamp,":","")
+	timestamp = Replace(timestamp," ","")
+	
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=email_create").Set timestamp & DATA_DICTIONARY("email")
+	
+	ReportStep "SignIn", "On Sign in Page - email entered ", "Done", True
+	'Click Create an account button
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebButton("name:=.*Create an account.*").Click
+	Browser("CreationTime:=0").Sync
+	
+	If Browser("CreationTime:=0").Page("title:=Login - My Store").WebRadioGroup("name:=id_gender").Exist Then
+		ReportStep "SignIn", "SignIn successfully. ", True, True 
+	Else
+		ReportStep "SignIn", "SignIn not  successfull. ", False, True	
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+	
+	Call ErroHandling()
+
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: User registration 
+'-------------------------------------------------------------------------------
+Function Registration
+
+	On Error Resume Next
+	
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "Registration", "Could not execute the Registration functionality.", False, True
+		Exit function
+	End If
+	''YOUR PERSONAL INFORMATION
+	If Ucase(DATA_DICTIONARY("title"))  = "MR" Then
+		Browser("CreationTime:=0").Page("title:=Login - My Store").WebRadioGroup("name:=id_gender").Select "1"
+	ElseIf Ucase(DATA_DICTIONARY("title"))  = "MRS" Then
+		Browser("CreationTime:=0").Page("title:=Login - My Store").WebRadioGroup("name:=id_gender").Select "2"
+	End If
+	
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=customer_firstname").Set DATA_DICTIONARY("firstname")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=customer_lastname").Set DATA_DICTIONARY("lastname")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=passwd").Set DATA_DICTIONARY("password")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebList("name:=days").Select Trim(DATA_DICTIONARY("dob_days")) & "  " '		add 2 spaces in the end
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebList("name:=months").Select Trim(DATA_DICTIONARY("dob_mnths")) & " " '		add 1 spaces in the end
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebList("name:=years").Select Trim(DATA_DICTIONARY("dob_years")) & "  " '		add 2 spaces in the end
+	ReportStep "Registration", "On Registration Page - YOUR PERSONAL INFORMATION entered ", "Done", True
+	
+	''YOUR ADDRESS
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=firstname").Set DATA_DICTIONARY("ya_firstname")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=lastname").Set DATA_DICTIONARY("ya_lastname")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=address1").Set DATA_DICTIONARY("address")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=city").Set DATA_DICTIONARY("city")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebList("name:=id_country").Select DATA_DICTIONARY("country")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebList("name:=id_state").Select DATA_DICTIONARY("state")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=postcode").Set DATA_DICTIONARY("zip")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=phone_mobile").Set DATA_DICTIONARY("mobile")
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebEdit("name:=alias").Set DATA_DICTIONARY("addressalias")
+	
+	ReportStep "Registration", "On Registration Page - YOUR ADDRESS entered ", "Done", True
+	'
+	Browser("CreationTime:=0").Page("title:=Login - My Store").WebButton("name:=Register").Click
+	Browser("CreationTime:=0").Sync
+	
+	'Verify "My Account" label displays
+	If Browser("CreationTime:=0").Page("title:=My account - My Store").WebElement("outertext:=My account","html tag:=SPAN","visible:=true").Exist Then
+		ReportStep "Registration", "Registration successful. My Acount section displayed on Page ", True, True
+		Browser("CreationTime:=0").Page("title:=My account - My Store").WebElement("outertext:=My account","html tag:=SPAN","visible:=true").Highlight
+	Else
+		ReportStep "Registration", "Registration not successful ", False, True	
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+
+	Call ErroHandling()
+	
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: Select T-Shirt and Checkout 
+'-------------------------------------------------------------------------------
+Function SelectTShirtAndCheckout
+
+	On Error Resume Next
+	
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "SelectTShirtAndCheckout", "Could not execute the SelectTShirtAndCheckout functionality.", False, True
+		Exit function
+	End If
+	
+	''Click T-Shirts link	
+	Browser("CreationTime:=0").Page("title:=My account - My Store").Link("name:=T-shirts","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	
+	ReportStep "SelectTShirtAndCheckout", " On T Shirts page ", "Done", True
+	
+	'Hover on Image
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Image("name:=Image","alt:=Faded Short Sleeve T-shirts","index:=0","visible:=true").Highlight	
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Image("name:=Image","alt:=Faded Short Sleeve T-shirts","index:=0","visible:=true").HoverTap
+	
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Link("name:=Add to cart","index:=0","visible:=true").Highlight
+	ReportStep "SelectTShirtAndCheckout", "Add to cart button ", "Done", True
+	
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Link("name:=Add to cart","index:=0","visible:=true").Click
+	Browser("CreationTime:=0").Sync	
+	
+	
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Link("name:=Proceed to checkout","index:=0","visible:=true").Highlight
+	ReportStep "SelectTShirtAndCheckout", "Proceed to checkout button ", "Done", True
+	Browser("CreationTime:=0").Page("title:=T-shirts - My Store").Link("name:=Proceed to checkout","index:=0","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	'Verift Address
+	Browser("CreationTime:=0").Page("title:=Order - My Store").WebElement("outertext:=DELIVERY ADDRESS.*","visible:=true","index:=0").highlight
+	ReportStep "SelectTShirtAndCheckout", "DELIVERY ADDRESS ", "Done", True
+	
+	Browser("CreationTime:=0").Page("title:=Order - My Store").Link("outertext:=Proceed to checkout","visible:=true").Click
+	Browser("CreationTime:=0").Page("title:=Order - My Store").WebButton("outertext:=Proceed to checkout","visible:=true").Click
+	'I agree to the terms of service and will adhere to them unconditionally. (Read the Terms of Service)
+	Browser("CreationTime:=0").Page("title:=Order - My Store").WebCheckBox("name:=cgv","visible:=true").Set "ON"
+	ReportStep "SelectTShirtAndCheckout", "I agree to the terms of service and will adhere to them unconditionally. (Read the Terms of Service) ", "Done", True
+	
+	Browser("CreationTime:=0").Page("title:=Order - My Store").WebButton("outertext:=Proceed to checkout","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	
+	'Pay by bank wire - option displayed
+	If Browser("CreationTime:=0").Page("title:=Order - My Store").Link("title:=Pay by bank wire","index:=0","visible:=true").Exist Then
+		ReportStep "SelectTShirtAndCheckout", "Checkout successful. Pay by bank wire - option displayed ", True, True
+		Browser("CreationTime:=0").Page("title:=Order - My Store").Link("title:=Pay by bank wire","index:=0","visible:=true").Highlight
+	Else
+		ReportStep "SelectTShirtAndCheckout", "Chekout not successful ", False, True	
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+	
+	Call ErroHandling()
+
+End Function
+
+
+'-------------------------------------------------------------------------------
+'Description: Payment
+'-------------------------------------------------------------------------------
+Function Payment
+
+	On Error Resume Next
+	
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "Payment", "Could not execute the Payment functionality.", False, True
+		Exit function
+	End If
+	
+	Browser("CreationTime:=0").Page("title:=Order - My Store").Link("title:=Pay by bank wire","index:=0","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	Wait 5
+	ReportStep "Payment", " Pay by bank wire link Clicked  ", "Done", True
+	
+	Browser("CreationTime:=0").Page("title:=My Store").WebButton("outertext:=I confirm my order","index:=0","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	
+	'Verify - Your order on My Store is complete
+	If Browser("CreationTime:=0").Page("title:=Order confirmation - My Store").WebElement("outertext:=Your order on My Store is complete.","index:=0","visible:=true").Exist Then
+		Browser("CreationTime:=0").Page("title:=Order confirmation - My Store").WebElement("outertext:=Your order on My Store is complete.","index:=0","visible:=true").Highlight
+		ReportStep "Payment", "Payment successful. Your order on My Store is complete - message displayed ", True, True
+	Else
+		ReportStep "Payment", "Payment not successful ", False, True	
+		FLAG_EVALFAIL = FLAG_EVALFAIL + 1
+	End If
+	
+	Call ErroHandling()
+
+End Function
+
+'-------------------------------------------------------------------------------
+'Description: Signout 
+'-------------------------------------------------------------------------------
+Function SignOut
+
+	On Error Resume Next
+	
+	If FLAG_EVALFAIL<>0 Then
+		ReportStep "SignOut", "Could not execute the SignOut functionality.", False, True
+		Exit function
+	End If
+	
+	'sign out
+	Browser("CreationTime:=0").Page("title:=Order confirmation - My Store").Link("name:=Sign out.*","index:=0","visible:=true").Click
+	Browser("CreationTime:=0").Sync
+	
+	Browser("CreationTime:=0").Close
+	
+	Call ErroHandling()
+
+End Function

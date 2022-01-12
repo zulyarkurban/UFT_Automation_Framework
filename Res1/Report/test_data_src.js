@@ -1,0 +1,1 @@
+﻿var __testDataSource={items:[{dataFilePath:'Default.xlsx',dataFileFormat:'excel',dataFileFolder:'\\\\Win10\\work data\\Zulyar - UFT Project\\automationpractice\\Res1',namePairs:[]}]};
